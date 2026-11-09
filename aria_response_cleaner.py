@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+MAX_RESPONSE_CHARS = 512
+
 # Sentence-final marks, optionally followed by closing quotation/bracket marks.
 _FINAL = re.compile(r"[.!?。！？][\"'”’)]*\s*$")
 _BOUNDARY = re.compile(r"[.!?。！？][\"'”’)]*(?=\s|$)")
@@ -41,8 +43,8 @@ def trim_unfinished_sentence(text: str) -> str:
         return text
 
     # 1. New creative requirement: Tight character slice right at the 512-character mark
-    if len(text) > 512:
-        text = text[:512]
+    if len(text) > MAX_RESPONSE_CHARS:
+        text = text[:MAX_RESPONSE_CHARS]
 
     stripped = text.rstrip()
     if _FINAL.search(stripped):

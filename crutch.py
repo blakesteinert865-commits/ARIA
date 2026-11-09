@@ -2045,13 +2045,17 @@ def plain(text: str, *, max_sentences: int | None = None) -> str:
     return text
 
 
-def ask_model(text: str, system: str | None = None, *, detailed: bool = False,
-              history: list[dict[str, str]] | None = None) -> str:
-    """Ask the model with separate speaker roles and request-scoped length.
+try:
+    from aria_response_cleaner import MAX_RESPONSE_CHARS
+except ImportError:
+    MAX_RESPONSE_CHARS = 512
 
-    Direct calls remain compatible: history=None sends just a user message.
-    The bridge supplies up to three preceding messages (including Crutch
-    answers as assistant messages), never a flattened pseudo-conversation.
+def ask_model(text: str, system: str | None = None, *, detailed: bool = False,
+              history: list[dict[str, str]] | None = None, on_delta=None) -> str:
+    """Request model output, forwarding incremental text to an optional callback.
+
+    The callback receives only new chunks. No direct stdout printing happens here:
+    the bridge owns the stdout protocol and prints a single final reply.
     """
     if system is None:
         system = DETAILED_SYSTEM_PROMPT if detailed else SYSTEM_PROMPT
@@ -2068,33 +2072,36 @@ def ask_model(text: str, system: str | None = None, *, detailed: bool = False,
                "stream": True, "messages": messages}
     if NO_THINK:
         payload["chat_template_kwargs"] = {"enable_thinking": False}
-        req = urllib.request.Request(MODEL_URL, data=json.dumps(payload).encode(),
-                                 headers={"Content-Type": "application/json"})
-
     req = urllib.request.Request(MODEL_URL, data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"})
-
-    full_response = []
+    full_response: list[str] = []
+    remaining = MAX_RESPONSE_CHARS
     try:
         with urllib.request.urlopen(req, timeout=180) as response:
-            for line in response:
-                line = line.decode('utf-8').strip()
+            for raw_line in response:
+                line = raw_line.decode("utf-8").strip()
                 if not line.startswith("data:"):
                     continue
-                if line == "data: [DONE]":
+                data = line[5:].strip()
+                if data == "[DONE]":
                     break
                 try:
-                    chunk = json.loads(line[5:].strip())
-                    token = chunk["choices"][0]["delta"].get("content", "")
-                    if token:
-                        print(token, end="", flush=True)
-                        full_response.append(token)
-                except Exception:
+                    token = json.loads(data)["choices"][0]["delta"].get("content", "")
+                except (ValueError, KeyError, IndexError, TypeError, AttributeError):
                     continue
-        print()
+                if not isinstance(token, str) or not token:
+                    continue
+                piece = token[:remaining]
+                if piece:
+                    full_response.append(piece)
+                    if on_delta is not None:
+                        on_delta(piece)
+                    remaining -= len(piece)
+                if remaining <= 0:
+                    break
         return "".join(full_response)
-    except (urllib.error.URLError, OSError, KeyError, ValueError) as e:
-        raise ModelUnavailable(str(e))
+    except (urllib.error.URLError, OSError, KeyError, ValueError) as exc:
+        raise ModelUnavailable(str(exc)) from exc
 
 
 def respond(text: str, use_model: bool = True):

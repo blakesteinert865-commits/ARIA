@@ -13,12 +13,13 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 from collections import deque
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QThread, QTimer
+from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QIcon, QPainter, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
@@ -320,6 +321,10 @@ class MessageBubble(QFrame):
         self.text_browser.set_message(text)
         bubble_layout.addWidget(self.text_browser)
 
+    def set_text(self, text: str) -> None:
+        self.raw_text = text
+        self.text_browser.set_message(text)
+
     def copy_response(self) -> None:
         QApplication.clipboard().setText(self.raw_text)
         if hasattr(self, "copy_btn"):
@@ -340,7 +345,8 @@ class TypingBubble(QFrame):
 
 
 class BackendWorker(QThread):
-    """Runs crutch.py without blocking the GUI thread."""
+    """Stream JSON-lines from the bridge without blocking the Qt event loop."""
+    chunk_ready = pyqtSignal(str)
 
     def __init__(self, prompt: str, context_json: str, generation: int, parent: QWidget | None = None):
         super().__init__(parent)
@@ -351,23 +357,35 @@ class BackendWorker(QThread):
 
     def run(self) -> None:
         try:
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    str(BACKEND_BRIDGE),
-                    "--prompt", self.prompt,
-                    "--context", self.context_prompt,
-                ],
-                cwd=str(BACKEND_DIR),
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            self.result_text = completed.stdout.strip() or "(No output returned.)"
-        except subprocess.CalledProcessError as exc:
-            detail = exc.stderr.strip() if exc.stderr else "Unknown script error."
-            self.result_text = f"Script Error: {detail}"
-        except Exception as exc:  # Includes a missing backend directory/script.
+            # Avoid stderr/stdout pipe deadlocks and prevent diagnostics from
+            # contaminating the structured stream. The file is auto-removed.
+            with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as error_log:
+                with subprocess.Popen(
+                    [sys.executable, "-u", str(BACKEND_BRIDGE), "--stream-events",
+                     "--prompt", self.prompt, "--context", self.context_prompt],
+                    cwd=str(BACKEND_DIR), stdout=subprocess.PIPE, stderr=error_log,
+                    text=True, encoding="utf-8", errors="replace", bufsize=1,
+                ) as process:
+                    assert process.stdout is not None
+                    for line in process.stdout:
+                        try:
+                            event = json.loads(line)
+                        except (ValueError, TypeError):
+                            continue
+                        if not isinstance(event, dict) or not isinstance(event.get("text"), str):
+                            continue
+                        if event.get("type") == "delta":
+                            self.chunk_ready.emit(event["text"])
+                        elif event.get("type") == "final":
+                            self.result_text = event["text"]
+                    exit_code = process.wait()
+                if exit_code != 0:
+                    error_log.seek(0)
+                    detail = error_log.read()[-1800:].strip() or f"Exit code {exit_code}"
+                    self.result_text = f"Script Error: {detail}"
+            if not self.result_text:
+                self.result_text = "(No output returned.)"
+        except Exception as exc:
             self.result_text = f"System Error: {exc}"
 
 
@@ -380,6 +398,8 @@ class CachyChatBot(QWidget):
         self.context_generation = 0
         self.worker: BackendWorker | None = None
         self.typing_bubble: TypingBubble | None = None
+        self.stream_bubble: MessageBubble | None = None
+        self.stream_text = ""
         self._glow_phase = 0.0
         self._glow_opacity = 0.31
         self._init_ui()
@@ -598,6 +618,8 @@ class CachyChatBot(QWidget):
         # Invalidate an in-flight reply as well as clearing visible and short-term context.
         # This never touches crutch.py's persistent notes, lists or timetable.
         self.context_generation += 1
+        self.stream_bubble = None
+        self.stream_text = ""
         self.memory.clear()
         self._remove_typing_bubble()
         while self.messages_layout.count() > 1:
@@ -768,8 +790,20 @@ class CachyChatBot(QWidget):
         self._set_status("Thinking…", "busy")
 
         self.worker = BackendWorker(user_text, context_prompt, self.context_generation, self)
+        self.worker.chunk_ready.connect(self._on_backend_delta)
         self.worker.finished.connect(self._on_backend_finished)
         self.worker.start()
+        self._scroll_to_bottom()
+
+    def _on_backend_delta(self, fragment: str) -> None:
+        worker = self.worker
+        if worker is None or worker.generation != self.context_generation or not fragment:
+            return
+        if self.stream_bubble is None:
+            self._remove_typing_bubble()
+            self.stream_bubble = self._add_message("assistant", "")
+        self.stream_text += fragment
+        self.stream_bubble.set_text(self.stream_text)
         self._scroll_to_bottom()
 
     def _on_backend_finished(self) -> None:
@@ -778,10 +812,15 @@ class CachyChatBot(QWidget):
             return
         response = worker.result_text or "(No output returned.)"
         self._remove_typing_bubble()
-        # A response from before /clear is intentionally discarded.
+        # Ignore stale streams after /clear; never append a second final bubble.
         if worker.generation == self.context_generation:
             self.memory.append(("assistant", response))
-            self._add_message("assistant", response)
+            if self.stream_bubble is None:
+                self._add_message("assistant", response)
+            else:
+                self.stream_bubble.set_text(response)
+        self.stream_bubble = None
+        self.stream_text = ""
         worker.deleteLater()
         self.worker = None
         self.send_btn.setEnabled(True)

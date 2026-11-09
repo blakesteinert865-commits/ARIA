@@ -18,6 +18,7 @@ import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
+from aria_response_cleaner import trim_unfinished_sentence
 
 BACKEND_DIR = Path(__file__).resolve().parent
 BACKEND_SCRIPT = BACKEND_DIR / "crutch.py"
@@ -138,7 +139,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Aria Tools backend bridge")
     parser.add_argument("--prompt", required=True, help="Original user text; passed unchanged to tool routing")
     parser.add_argument("--context", default="", help="Recent GUI history as JSON or legacy transcript")
+    parser.add_argument("--stream-events", action="store_true", help="Emit JSON-line events for live GUI streaming")
     args = parser.parse_args()
+
+    def emit(kind: str, value: str) -> None:
+        if args.stream_events:
+            print(json.dumps({"type": kind, "text": value}, ensure_ascii=False), flush=True)
+        elif kind == "final":
+            print(value, flush=True)
 
     trace = {
         "request_id": uuid.uuid4().hex[:12],
@@ -162,7 +170,7 @@ def main() -> int:
         routed = backend.route(args.prompt)  # Original prompt, always first.
         if routed is not None:
             trace["route"], trace["tool"], trace["reply_source"] = "deterministic_match", routed[1], "crutch"
-            print(routed[0])
+            emit("final", routed[0])
             return 0
 
         trace["route"] = "no_deterministic_match"
@@ -200,18 +208,20 @@ def main() -> int:
             if os.environ.get("ARIA_RAG_DEBUG"):
                 print(f"[rag] {type(exc).__name__}: {exc}", file=sys.stderr)
 
+        on_delta = (lambda part: emit("delta", part)) if args.stream_events else None
         model_started = time.perf_counter()
         try:
             if trace["context_attached"]:
                 raw_reply = backend.ask_model(args.prompt, system=system_context,
-                                              detailed=detailed, history=history)
+                                              detailed=detailed, history=history, on_delta=on_delta)
             else:
                 raw_reply = backend.ask_model(args.prompt, detailed=detailed,
-                                              history=history)
+                                              history=history, on_delta=on_delta)
             trace["model_status"] = "success"
             reply = backend.plain(raw_reply, max_sentences=0 if detailed else None)
+            reply = trim_unfinished_sentence(reply)
             trace["reply_source"] = "model_with_wiki" if trace["context_attached"] else "model"
-            print(reply or "(No output returned.)")
+            emit("final", reply or "(No output returned.)")
             return 0
         except backend.ModelUnavailable as exc:
             trace["model_status"] = "unreachable"
@@ -220,10 +230,10 @@ def main() -> int:
             # expose that text directly instead of returning an empty failure.
             if reference is not None and reference.passage.strip():
                 trace["reply_source"] = "wiki_offline_fallback"
-                print(f"Offline Wikipedia result: {reference.title}\n\n{reference.passage}")
+                emit("final", f"Offline Wikipedia result: {reference.title}\n\n{reference.passage}")
             else:
                 trace["reply_source"] = "unavailable"
-                print(MODEL_UNAVAILABLE_REPLY)
+                emit("final", MODEL_UNAVAILABLE_REPLY)
             return 0
         finally:
             trace["model_duration_ms"] = round((time.perf_counter() - model_started) * 1000, 2)
