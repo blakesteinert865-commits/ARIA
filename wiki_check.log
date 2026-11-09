@@ -1,0 +1,16 @@
+Archive: /home/blake/ARIA/data/wiki-eng-simple.zim
+Archive UUID: a954ad0f-6aa2-b0c7-40bb-5494f33f1a07
+Articles: 400061
+Title index: True
+Full-text index: True
+OK [247 ms] What is an atom? -> Atom (760 chars, cached=False)
+   An atom is an extremely small piece of matter . All normal matter – everything that has mass – is made of atoms. This includes solids , liquids , and gases . Th...
+OK [162 ms] Who was Albert Einstein? -> Albert Einstein (760 chars, cached=False)
+   Albert Einstein (14 March 1879 – 18 April 1955) was a German-born Jewish scientist. He worked on theoretical physics . He is most famous for the theory of relat...
+OK [48 ms] Tell me about the Eiffel Tower. -> Eiffel Tower (620 chars, cached=False)
+   The Eiffel Tower ( French : La Tour Eiffel, [tuʁ ɛfɛl], IPA pronunciation : "EYE-full" English ; "Eiffel" French ) is a wrought-iron landmark in Paris . It was ...
+OK [34 ms] Elaborate on how stars form. -> Star formation (2877 chars, cached=False)
+   Star formation means the earliest stages in a star's life . Dense regions of particles exist in molecular clouds known as "stellar nurseries". The clouds collap...
+OK [113 ms] Explain atoms in detail. -> Atom (4399 chars, cached=False)
+   An atom is an extremely small piece of matter . All normal matter – everything that has mass – is made of atoms. This includes solids , liquids , and gases . Th...
+Live archive retrieval checks passed. Model answers still need an active local server.

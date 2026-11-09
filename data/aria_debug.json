@@ -1,0 +1,22 @@
+{
+  "request_id": "d60231afd758",
+  "timestamp_utc": "2026-11-09T01:41:08+00:00",
+  "question": "what do i have now",
+  "route": "deterministic_match",
+  "tool": "timetable",
+  "rag_eligible": null,
+  "rag_status": "not_attempted",
+  "article_title": null,
+  "article_path": null,
+  "cache_hit": null,
+  "passage_chars": 0,
+  "context_attached": false,
+  "model_endpoint": "http://localhost:1234/v1/chat/completions",
+  "model_name": "local-model",
+  "model_status": "not_attempted",
+  "model_duration_ms": null,
+  "reply_source": "crutch",
+  "fallback_reason": null,
+  "errors": [],
+  "total_duration_ms": 73.56
+}

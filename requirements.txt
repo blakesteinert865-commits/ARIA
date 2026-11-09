@@ -1,0 +1,6 @@
+# Install inside /home/blake/ARIA/.venv to keep Aria's Python dependencies together.
+PyQt6>=6.7
+libzim>=3.0
+beautifulsoup4>=4.12
+# Optional UI Markdown renderer, included for consistent appearance.
+mistune>=3.0

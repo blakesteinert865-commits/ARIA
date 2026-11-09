@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""Run on the target Linux PC to validate the REAL Simple Wikipedia ZIM."""
+from __future__ import annotations
+import sys
+import time
+import aria_wiki_rag as rag
+
+
+def main() -> int:
+    path = rag.zim_path()
+    print(f"Archive: {path}")
+    if not path.is_file():
+        print("ERROR: ZIM archive not found. Place wiki-eng-simple.zim under ./data/")
+        return 1
+    try:
+        from bs4 import BeautifulSoup  # noqa: F401; explicit dependency check
+        from libzim.reader import Archive
+        with Archive(path) as zim:
+            print(f"Archive UUID: {zim.uuid}")
+            print(f"Articles: {zim.article_count}")
+            print(f"Title index: {zim.has_title_index}")
+            print(f"Full-text index: {zim.has_fulltext_index}")
+            if not zim.has_title_index or not zim.has_fulltext_index:
+                print("WARNING: One of the required search indexes is unavailable.")
+    except (ImportError, OSError, ValueError, RuntimeError) as exc:
+        print(f"ERROR: libzim/Beautiful Soup/ZIM issue: {type(exc).__name__}: {exc}")
+        return 1
+    errors = 0
+    # Crutch-first routing still applies in the GUI; this probes Wikipedia directly.
+    questions = [
+        ("What is an atom?", False),
+        ("Who was Albert Einstein?", False),
+        ("Tell me about the Eiffel Tower.", False),
+        ("Elaborate on how stars form.", True),
+        ("Explain atoms in detail.", True),
+    ]
+    for question, detailed in questions:
+        start = time.perf_counter()
+        result = rag.retrieve(question, detailed=detailed)
+        elapsed = (time.perf_counter() - start) * 1000
+        if result is None:
+            errors += 1
+            print(f"FAIL [{elapsed:.0f} ms] {question}")
+            continue
+        print(f"OK [{elapsed:.0f} ms] {question} -> {result.title} "
+              f"({len(result.passage)} chars, cached={result.from_cache})")
+        print("   " + result.passage[:160].replace("\n", " ") + "...")
+    if errors:
+        print(f"{errors} retrieval check(s) failed. Check library/version and article titles.")
+        return 1
+    print("Live archive retrieval checks passed. Model answers still need an active local server.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

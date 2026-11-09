@@ -1,0 +1,304 @@
+{
+  "subjects": {
+    "home group": {
+      "name": "Home Group",
+      "room": "R8",
+      "aliases": [
+        "home group",
+        "homegroup",
+        "home room",
+        "homeroom"
+      ]
+    },
+    "science": {
+      "name": "Science",
+      "room": "UL",
+      "aliases": [
+        "science"
+      ]
+    },
+    "english": {
+      "name": "Essential English",
+      "room": "R28",
+      "aliases": [
+        "essential english",
+        "english"
+      ]
+    },
+    "maths": {
+      "name": "Maths",
+      "room": "U3",
+      "aliases": [
+        "mathematics",
+        "maths",
+        "math"
+      ]
+    },
+    "music": {
+      "name": "Music",
+      "room": "MS",
+      "aliases": [
+        "music"
+      ]
+    },
+    "exploring": {
+      "name": "Exploring Identities and Futures",
+      "room": "R27",
+      "aliases": [
+        "exploring identities and futures",
+        "exploring identities",
+        "identities and futures",
+        "exploring"
+      ]
+    },
+    "vines": {
+      "name": "Vines and Wines",
+      "room": "STA1",
+      "aliases": [
+        "vines and wines",
+        "vines",
+        "wines"
+      ]
+    },
+    "digital art": {
+      "name": "Digital Art and Graphics",
+      "room": "T5",
+      "aliases": [
+        "digital art and graphics",
+        "digital art",
+        "graphics",
+        "art"
+      ]
+    },
+    "student dev": {
+      "name": "Student Development",
+      "room": "R8",
+      "aliases": [
+        "student development",
+        "student dev"
+      ]
+    }
+  },
+  "days": {
+    "monday": [
+      [
+        "08:50",
+        "09:00",
+        "home group"
+      ],
+      [
+        "09:00",
+        "09:40",
+        "science"
+      ],
+      [
+        "09:40",
+        "10:20",
+        "english"
+      ],
+      [
+        "10:20",
+        "11:00",
+        "maths"
+      ],
+      [
+        "11:30",
+        "12:10",
+        "music"
+      ],
+      [
+        "12:10",
+        "12:50",
+        "exploring"
+      ],
+      [
+        "13:20",
+        "14:00",
+        "vines"
+      ],
+      [
+        "14:00",
+        "14:40",
+        "digital art"
+      ]
+    ],
+    "tuesday": [
+      [
+        "08:50",
+        "09:00",
+        "home group"
+      ],
+      [
+        "09:00",
+        "09:45",
+        "exploring"
+      ],
+      [
+        "09:45",
+        "10:30",
+        "music"
+      ],
+      [
+        "10:30",
+        "11:15",
+        "music"
+      ],
+      [
+        "11:45",
+        "12:30",
+        "maths"
+      ],
+      [
+        "12:30",
+        "13:15",
+        "maths"
+      ],
+      [
+        "13:45",
+        "14:30",
+        "science"
+      ],
+      [
+        "14:30",
+        "15:15",
+        "vines"
+      ]
+    ],
+    "wednesday": [
+      [
+        "08:50",
+        "09:00",
+        "home group"
+      ],
+      [
+        "09:00",
+        "09:40",
+        "english"
+      ],
+      [
+        "09:40",
+        "10:20",
+        "science"
+      ],
+      [
+        "10:20",
+        "11:00",
+        "science"
+      ],
+      [
+        "11:30",
+        "12:10",
+        "exploring"
+      ],
+      [
+        "12:10",
+        "12:50",
+        "exploring"
+      ],
+      [
+        "12:50",
+        "13:20",
+        "student dev"
+      ],
+      [
+        "13:50",
+        "14:35",
+        "digital art"
+      ],
+      [
+        "14:35",
+        "15:15",
+        "music"
+      ]
+    ],
+    "thursday": [
+      [
+        "08:50",
+        "09:00",
+        "home group"
+      ],
+      [
+        "09:00",
+        "09:45",
+        "digital art"
+      ],
+      [
+        "09:45",
+        "10:30",
+        "vines"
+      ],
+      [
+        "10:30",
+        "11:15",
+        "vines"
+      ],
+      [
+        "11:45",
+        "12:30",
+        "english"
+      ],
+      [
+        "12:30",
+        "13:15",
+        "english"
+      ],
+      [
+        "13:45",
+        "14:30",
+        "science"
+      ],
+      [
+        "14:30",
+        "15:15",
+        "maths"
+      ]
+    ],
+    "friday": [
+      [
+        "08:50",
+        "09:00",
+        "home group"
+      ],
+      [
+        "09:00",
+        "09:40",
+        "music"
+      ],
+      [
+        "09:40",
+        "10:20",
+        "digital art"
+      ],
+      [
+        "10:20",
+        "11:00",
+        "digital art"
+      ],
+      [
+        "11:30",
+        "12:10",
+        "maths"
+      ],
+      [
+        "12:10",
+        "12:50",
+        "vines"
+      ],
+      [
+        "12:50",
+        "13:20",
+        "student dev"
+      ],
+      [
+        "13:50",
+        "14:35",
+        "exploring"
+      ],
+      [
+        "14:35",
+        "15:15",
+        "english"
+      ]
+    ]
+  }
+}
